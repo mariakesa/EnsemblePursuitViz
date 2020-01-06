@@ -3,7 +3,9 @@ from sklearn.decomposition import PCA
 from scipy.stats import skew
 import time
 from scipy.stats import zscore
-from EnsemblePursuit import utils
+import sys
+sys.path.insert(0, '/home/maria/Documents/EnsemblePursuitViz/EnsemblePursuit_modified')
+import utils
 
 def new_ensemble(X, C, seed_timecourse, lam, discard_first_neuron = False):
     # X are the NT by NN neural activity traces (z-scored)
@@ -64,7 +66,7 @@ def new_ensemble(X, C, seed_timecourse, lam, discard_first_neuron = False):
 
     # take only first n neurons
     iorder = iorder[:n]
-
+    print(iorder)
     return iorder, current_v
 
 def one_round_of_kmeans(V, X, lam=0.01, threshold=True):
