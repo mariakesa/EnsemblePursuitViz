@@ -28,6 +28,7 @@ def new_ensemble(X, C, seed_timecourse, lam, discard_first_neuron = False):
     iorder = np.zeros(NN, 'int32')
 
     n = 0
+    cost_delta_lst=[]
     while True:
         # at each iteration, first determine the neuron to be added
         imax = np.argmax(C_summed * mask_neurons)
@@ -37,6 +38,9 @@ def new_ensemble(X, C, seed_timecourse, lam, discard_first_neuron = False):
 
         # compute delta cost function
         cost_delta = np.maximum(0., C_summed[imax])**2 / vnorm
+        
+        cost_delta_ = np.maximum(0., C_summed)**2 / vnorm
+        cost_delta_lst.append(cost_delta_/NT)
 
         #print('cost_delta',cost_delta/NT)
 
@@ -66,8 +70,7 @@ def new_ensemble(X, C, seed_timecourse, lam, discard_first_neuron = False):
 
     # take only first n neurons
     iorder = iorder[:n]
-    print(iorder)
-    return iorder, current_v
+    return iorder, current_v, cost_delta_lst
 
 def one_round_of_kmeans(V, X, lam=0.01, threshold=True):
     # V are the NT by nK cluster activity traces
@@ -192,7 +195,8 @@ class EnsemblePursuit():
 
         self.order = []
         self.seed = np.zeros((NT, nK))
-
+	
+        self.cost_deltas=[]
         #  outer loop
         for j in range(nK):
             # initialize with "biggest" k-means ensemble (by variance)
@@ -202,7 +206,7 @@ class EnsemblePursuit():
             seed = zscore(V[:, imax])
 
             # fit one ensemble starting from this seed
-            iorder, current_v  = new_ensemble(X, C, seed, lam)
+            iorder, current_v, cost_delta_lst  = new_ensemble(X, C, seed, lam)
             self.order.append(iorder)
             self.seed[:, j] = seed
 
@@ -238,6 +242,8 @@ class EnsemblePursuit():
 
             # run one round of k-means because we changed X
             V, vm = one_round_of_kmeans(V, X, lam)
+            
+            self.cost_deltas.append(cost_delta_lst)
 
             if j%25==0 or j == nK-1:
                 print('ensemble %d, time %2.2f, nr neurons %d, EV %2.4f'%(j, time.time() - t0, len(iorder), 1-np.mean(X**2)))
